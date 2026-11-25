@@ -252,3 +252,7 @@ Potential future development includes:
 ## Project Status
 
 DiskAudit is under active development. `Get-DiskInventory` provides the inventory collection foundation for future disk auditing and reporting functionality.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
