@@ -27,6 +27,11 @@ function Get-DiskInventory {
         }
 
         foreach ($Target in $Targets) {
+            $TargetName = switch ($PSCmdlet.ParameterSetName) {
+                'ComputerName' { $Target }
+                'CimSession'   { $Target.ComputerName }
+            }
+
             $CimParams = @{
                 ClassName   = 'Win32_LogicalDisk'
                 Filter      = 'DriveType = 3'
@@ -45,6 +50,8 @@ function Get-DiskInventory {
                 }
             }
 
+            Write-Verbose "Collecting disk inventory from $TargetName."
+
             try {
                 $Disks = Get-CimInstance @CimParams
             }
@@ -54,6 +61,13 @@ function Get-DiskInventory {
             }
 
             foreach ($Disk in $Disks) {
+                $ResolvedName = if ([string]::IsNullOrWhiteSpace($Disk.SystemName)) {
+                    $TargetName
+                }
+                else {
+                    $Disk.SystemName
+                }
+
                 if (
                     $null -eq $Disk.Size -or
                     $null -eq $Disk.FreeSpace -or
@@ -61,14 +75,14 @@ function Get-DiskInventory {
                     $Disk.FreeSpace -lt 0 -or
                     $Disk.FreeSpace -gt $Disk.Size
                 ) {
-                    Write-Warning "Invalid capacity data for $($Disk.DeviceID) on $($Disk.SystemName). Skipping volume."
+                    Write-Warning "Invalid capacity data for $($Disk.DeviceID) on $ResolvedName. Skipping volume."
                     continue
                 }
 
                 $UsedBytes = $Disk.Size - $Disk.FreeSpace
 
                 [PSCustomObject]@{
-                    ComputerName  = $Disk.SystemName
+                    ComputerName  = $ResolvedName
                     DriveLetter   = $Disk.DeviceID
                     VolumeLabel   = $Disk.VolumeName
                     FileSystem    = $Disk.FileSystem
