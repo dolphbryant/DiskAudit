@@ -1,27 +1,49 @@
 function Get-DiskInventory {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'ComputerName')]
     param(
         [Parameter(
+            ParameterSetName = 'ComputerName',
             ValueFromPipeline = $true,
             ValueFromPipelineByPropertyName = $true,
             Position = 0
         )]
         [ValidateNotNullOrEmpty()]
         [Alias('CN', 'Server', 'HostName')]
-        [string[]]$ComputerName = $env:COMPUTERNAME
+        [string[]]$ComputerName = $env:COMPUTERNAME,
+
+        [Parameter(
+            ParameterSetName = 'CimSession',
+            Mandatory = $true,
+            ValueFromPipeline = $true
+        )]
+        [ValidateNotNullOrEmpty()]
+        [Microsoft.Management.Infrastructure.CimSession[]]$CimSession
     )
 
     process {
-        foreach ($Computer in $ComputerName)  {
+        $Targets = switch ($PSCmdlet.ParameterSetName) {
+            'ComputerName' { $ComputerName }
+            'CimSession'   { $CimSession }
+        }
+
+        foreach ($Target in $Targets) {
             $CimParams = @{
                 ClassName = 'Win32_LogicalDisk'
                 Filter    = 'DriveType = 3'
             }
 
-            if ($Computer -notin @('localhost', '.', $env:COMPUTERNAME)) {
-                $CimParams['ComputerName'] = $Computer
+            switch ($PSCmdlet.ParameterSetName) {
+                'ComputerName' {
+                    if ($Target -notin @('localhost', '.', $env:COMPUTERNAME)) {
+                        $CimParams['ComputerName'] = $Target
+                    }
+                }
+
+                'CimSession' {
+                    $CimParams['CimSession'] = $Target
+                }
             }
-            
+
             $Disks = Get-CimInstance @CimParams
 
             foreach ($Disk in $Disks) {
