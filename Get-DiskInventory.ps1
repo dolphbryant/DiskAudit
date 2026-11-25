@@ -1,3 +1,52 @@
+<#
+.SYNOPSIS
+    Collects logical disk inventory from local and remote Windows computers.
+.DESCRIPTION
+    Retrieves fixed logical disk information using the Win32_LogicalDisk
+    CIM class. Returns structured objects containing computer names, drive
+    letters, volume labels, file systems, capacity, and utilization metrics.
+    Supports local execution, remote computer names, existing CIM sessions,
+    and pipeline input.
+    CIM query failures are reported per target. Volumes containing invalid
+    capacity data are skipped with a warning.
+.PARAMETER ComputerName
+    Specifies one or more Windows computers to query. Defaults to the
+    local computer.
+    Accepts pipeline input by value or property name.
+.PARAMETER CimSession
+    Specifies one or more existing CIM sessions to use when collecting
+    disk inventory.
+    Accepts CIM sessions through the pipeline.
+.EXAMPLE
+    Get-DiskInventory
+    Collects disk inventory from the local computer.
+.EXAMPLE
+    Get-DiskInventory -ComputerName 'SERVER01', 'SERVER02'
+    Collects disk inventory from multiple remote computers.
+.EXAMPLE
+    'SERVER01', 'SERVER02' | Get-DiskInventory
+    Collects disk inventory using computer names supplied through
+    the pipeline.
+.EXAMPLE
+    $Session = New-CimSession -ComputerName 'SERVER01'
+    Get-DiskInventory -CimSession $Session
+    Remove-CimSession -CimSession $Session
+    Collects disk inventory using an existing CIM session.
+.EXAMPLE
+    Get-DiskInventory | Export-Csv -Path '.\DiskInventory.csv' -NoTypeInformation
+    Exports local disk inventory to a CSV file.
+.OUTPUTS
+    System.Management.Automation.PSCustomObject
+    One object per fixed logical disk containing computer name, drive
+    letter, volume label, file system, capacity in bytes, and free and
+    used space in both bytes and percentages.
+.NOTES
+    Target computers must run Windows and provide access to the
+    Win32_LogicalDisk CIM class.
+    Remote collection requires appropriate permissions and connectivity.
+    This function does not modify disk configuration or contents.
+#>
+
 function Get-DiskInventory {
     [CmdletBinding(DefaultParameterSetName = 'ComputerName')]
     param(
