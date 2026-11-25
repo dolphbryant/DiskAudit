@@ -28,8 +28,9 @@ function Get-DiskInventory {
 
         foreach ($Target in $Targets) {
             $CimParams = @{
-                ClassName = 'Win32_LogicalDisk'
-                Filter    = 'DriveType = 3'
+                ClassName   = 'Win32_LogicalDisk'
+                Filter      = 'DriveType = 3'
+                ErrorAction = 'Stop'
             }
 
             switch ($PSCmdlet.ParameterSetName) {
@@ -44,7 +45,13 @@ function Get-DiskInventory {
                 }
             }
 
-            $Disks = Get-CimInstance @CimParams
+            try {
+                $Disks = Get-CimInstance @CimParams
+            }
+            catch {
+                $PSCmdlet.WriteError($_)
+                continue
+            }
 
             foreach ($Disk in $Disks) {
                 if (
