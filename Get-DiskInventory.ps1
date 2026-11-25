@@ -13,7 +13,16 @@ function Get-DiskInventory {
 
     process {
         foreach ($Computer in $ComputerName)  {
-            $Disks = Get-CimInstance -ClassName Win32_LogicalDisk -Filter 'DriveType = 3'
+            $CimParams = @{
+                ClassName = 'Win32_LogicalDisk'
+                Filter    = 'DriveType = 3'
+            }
+
+            if ($Computer -notin @('localhost', '.', $env:COMPUTERNAME)) {
+                $CimParams['ComputerName'] = $Computer
+            }
+            
+            $Disks = Get-CimInstance @CimParams
 
             foreach ($Disk in $Disks) {
                 if (
